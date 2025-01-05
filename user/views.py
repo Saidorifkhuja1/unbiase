@@ -75,65 +75,6 @@ async def register_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
 
 
 
-# @router.post("/register", response_model=dict, status_code=status.HTTP_201_CREATED)
-# async def register_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
-#     """
-#     Endpoint to register a new user.
-#
-#     Args:
-#         user (UserCreate): Data for creating a new user.
-#         db (AsyncSession): Database session dependency.
-#
-#     Returns:
-#         dict: A dictionary containing a success message, user data, and JWT tokens.
-#     """
-#     # Check if email already exists
-#     result = await db.execute(select(Users).where(Users.email == user.email))
-#     existing_user = result.scalar()
-#     if existing_user:
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail="Email is already registered.",
-#         )
-#
-#     # Hash the password
-#     hashed_password = Users.get_password_hash(user.password)
-#
-#     # Create the user object
-#     new_user = Users(
-#         email=user.email,
-#         full_name=user.full_name,
-#         phone_number=user.phone_number,
-#         password=hashed_password,
-#     )
-#
-#     # Add and commit the user to the database
-#     try:
-#         db.add(new_user)
-#         await db.commit()
-#         await db.refresh(new_user)
-#
-#         # Generate JWT tokens
-#         tokens = jwt_auth.login_jwt(user_id=str(new_user.id))
-#
-#         # Serialize the user object
-#         user_data = jsonable_encoder(new_user)
-#
-#         return {
-#             "message": "User registered successfully.",
-#             "user": user_data,
-#             "tokens": tokens,  # Include access and refresh tokens in the response
-#         }
-#     except IntegrityError as e:
-#         await db.rollback()
-#         raise HTTPException(
-#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#             detail="Failed to create user. Please try again later.",
-#         ) from e
-
-
-
-
 @router.post('/user_login')
 async def user_login(user_data: UserAuth, db: AsyncSession = Depends(get_db)):
     # Retrieve the user from the database by email

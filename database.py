@@ -27,6 +27,7 @@ async_session = async_sessionmaker(
 
 async def get_db() -> AsyncSession:
     async with async_session() as session:
+
         yield session
 
 
@@ -36,10 +37,3 @@ async def init_db():
         await conn.run_sync(Base.metadata.create_all)
 
 
-# async def get_db():
-#     async with engine.begin() as conn:
-#         await conn.run_sync(Base.metadata.create_all)
-#
-# async def delete_table():
-#     async with engine.begin() as conn:
-#         await conn.run_sync(Base.metadata.drop_all)
