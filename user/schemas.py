@@ -8,14 +8,21 @@ class UserBase(BaseModel):
     email: EmailStr
     full_name: str
     phone_number: str
+    status: Optional[bool] = False
+
+
+class UserAuth(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class UserPassword(BaseModel):
+    old_password: str
+    new_password: str
 
 
 class UserCreate(UserBase):
-    password: str = Field(
-        min_length=8,
-        max_length=64,
-        description="Password should be between 8 and 64 characters.",
-    )
+    password: str
 
 
 class UserRead(UserBase):
