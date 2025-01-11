@@ -1,15 +1,14 @@
 from sqlalchemy import Column, String, DateTime, func, Boolean
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
-from sqlalchemy.orm import DeclarativeBase
+
 from passlib.context import CryptContext
 import uuid
-
+from database import Base
 # Initialize password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Define the base class for ORM models
-class Base(DeclarativeBase):
-    pass
+
 
 # Define the Users model
 class Users(Base):
@@ -18,6 +17,7 @@ class Users(Base):
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
     email = Column(String(255), unique=True, nullable=False)
     full_name = Column(String(255), nullable=False)
+
     phone_number = Column(String(255), nullable=False)
     status = Column(Boolean, default=False, nullable=False)
     password = Column(String(60), nullable=False)

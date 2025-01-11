@@ -1,10 +1,11 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-
+from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.pool import NullPool
 
-from user.models import Base
+class Base(DeclarativeBase):
+    pass
 
-DATABASE_URL = "postgresql+asyncpg://postgres:said2000@localhost:5432/fastapi"
+DATABASE_URL = "postgresql+asyncpg://postgres:start2024@localhost:5434/unibase"
 
 # DATABASE_URL = 'sqlite+aiosqlite:///base.db'
 
@@ -22,13 +23,19 @@ async_session = async_sessionmaker(
 )
 
 
-
-
-
 async def get_db() -> AsyncSession:
-    async with async_session() as session:
+    try:
+        async with async_session() as session:
+            yield session
+    except Exception as e:
+        print("Database connection error:", e)
 
-        yield session
+
+
+# async def get_db() -> AsyncSession:
+#     async with async_session() as session:
+#
+#         yield session
 
 
 async def init_db():
