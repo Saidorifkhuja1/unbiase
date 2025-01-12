@@ -7,9 +7,11 @@ from user.models import Users
 from dependency import get_current_staff_user
 
 
+
+
 router = APIRouter()
 
-@router.post("/locations/", status_code=status.HTTP_201_CREATED)
+@router.post("/locations_create", status_code=status.HTTP_201_CREATED)
 async def create_location(
     location: LocationCreate,
     current_user: Users = Depends(get_current_staff_user),
@@ -19,6 +21,7 @@ async def create_location(
         name=location.name,
         created_by_id=current_user.id,
     )
+
     db.add(new_location)
     await db.commit()
     await db.refresh(new_location)
