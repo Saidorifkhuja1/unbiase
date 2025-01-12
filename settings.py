@@ -16,11 +16,11 @@ class Settings(BaseSettings):
     HOST: str = 'localhost'
     PORT: int = 8000
 
-    # DB_HOST: str = env.str("DB_HOST")
-    # DB_PORT: int = env.int("DB_PORT")
-    # DB_USER: str = env.str("DB_USER")
-    # DB_PASSWORD: str = env.str("DB_PASSWORD")
-    # DB_NAME: str = env.str("DB_NAME")
+    DB_HOST: str = env.str("DB_HOST")
+    DB_PORT: int = env.int("DB_PORT")
+    DB_USER: str = env.str("DB_USER")
+    DB_PASSWORD: str = env.str("DB_PASSWORD")
+    DB_NAME: str = env.str("DB_NAME")
 
 
 
