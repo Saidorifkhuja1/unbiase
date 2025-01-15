@@ -6,6 +6,6 @@ from location.views import router as location_router
 api_router = APIRouter()
 
 api_router.include_router(auth_router, prefix='', tags=['Auth'])
-location_router.include_router(location_router, prefix='', tags=['Location'])
+api_router.include_router(location_router, prefix='', tags=['Location'])
 
 

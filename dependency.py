@@ -14,7 +14,10 @@ async def get_current_staff_user(
     db: AsyncSession = Depends(get_db),
     token: str = Depends(JWTBearer(jwt_auth)),
 ):
+    print("Decoding token")
     payload = jwt_auth.decode_token(token)
+    print(f"Token payload: {payload}")
+
     user_id = payload.get("user_id")
     if not user_id:
         raise HTTPException(
@@ -22,7 +25,7 @@ async def get_current_staff_user(
             detail="Authentication required",
         )
 
-
+    print(f"Fetching user: {user_id}")
     result = await db.execute(select(Users).filter(Users.id == uuid.UUID(user_id)))
     user = result.scalars().first()
 
@@ -38,6 +41,6 @@ async def get_current_staff_user(
             detail="Only staff users are allowed to perform this action",
         )
 
+    print(f"User fetched: {user}")
     return user
-
 

@@ -33,10 +33,12 @@ async_session = async_sessionmaker(
 
 
 async def get_db() -> AsyncSession:
-    async with async_session() as session:
-
-        yield session
-
+    try:
+        async with async_session() as session:
+            yield session
+    except Exception as e:
+        print("Database connection error:", e)
+        raise
 
 async def init_db():
     async with engine.begin() as conn:
