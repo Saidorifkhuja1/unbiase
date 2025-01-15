@@ -6,9 +6,9 @@ class LocationCreate(BaseModel):
 
 
 class LocationID(BaseModel):
-    id: UUID  # Add the ID field
+    id: UUID
     name: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
