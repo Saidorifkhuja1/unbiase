@@ -4,13 +4,13 @@ from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from passlib.context import CryptContext
 import uuid
 from database import Base
-# Initialize password hashing context
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Define the base class for ORM models
 
 
-# Define the Users model
+
+
 class Users(Base):
     __tablename__ = 'users'
 

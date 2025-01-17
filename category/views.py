@@ -143,7 +143,7 @@ async def update_category(
 
 
 @router.delete("/category_delete/{category_id}/", status_code=status.HTTP_200_OK)
-async def delete_location(
+async def delete_category(
         category_id: UUID,
         db: AsyncSession = Depends(get_db),
         token: str = Depends(JWTBearer(jwt_auth))
@@ -192,8 +192,8 @@ async def delete_location(
 
 
 
-@router.get("/category_list/", response_model=list[CategoryID])
-async def list_locations(
+@router.get("/my_category_list/", response_model=list[CategoryID])
+async def list_categories(
     db: AsyncSession = Depends(get_db),
     token: str = Depends(JWTBearer(jwt_auth))
 ):
@@ -210,3 +210,21 @@ async def list_locations(
 
 
     return [{"id": category.id, "name": category.name} for category in categories]
+
+
+
+
+@router.get("/categories_list/", response_model=list[CategoryID])
+async def list_categories(
+    db: AsyncSession = Depends(get_db),
+):
+
+
+    result = await db.execute(select(Category))
+    categories = result.scalars().all()
+
+
+    return [{"id": category.id, "name": category.name} for category in categories]
+
+
+

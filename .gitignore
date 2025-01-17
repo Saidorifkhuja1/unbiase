@@ -1,5 +1,8 @@
 .env
-
+alembic.ini
 .idea
 migrations
 /migrations
+
+
+

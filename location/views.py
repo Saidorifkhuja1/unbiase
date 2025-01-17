@@ -199,7 +199,7 @@ async def delete_location(
 
 
 
-@router.get("/locations_list/", response_model=list[LocationID])
+@router.get("/my_locations_list/", response_model=list[LocationID])
 async def list_locations(
     db: AsyncSession = Depends(get_db),
     token: str = Depends(JWTBearer(jwt_auth))
@@ -223,6 +223,17 @@ async def list_locations(
 
 
 
+@router.get("/locations_list/", response_model=list[LocationID])
+async def list_locations(
+    db: AsyncSession = Depends(get_db),
+):
+
+
+    result = await db.execute(select(Location))
+    locations = result.scalars().all()
+
+
+    return [{"id": location.id, "name": location.name} for location in locations]
 
 
 
