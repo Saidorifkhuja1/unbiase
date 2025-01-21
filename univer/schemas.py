@@ -16,16 +16,30 @@ class UniversityCreate(BaseModel):
     webpage: HttpUrl
 
 
-class UniversityResponse1(UniversityCreate):
-    id: UUID
-    created_by_id: UUID
+class UniversityResponse1(BaseModel):
+    id: str
+    name: str
+    photo: str
+    # location_id: str
+    # category_id: str
+    # description: str
+    # amount_of_students: int
+    # phone_number: str
+    # email: str
+    # webpage: str
+    # created_by_id: str
+    # video: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+
+    # id: UUID
+    # created_by_id: UUID
+    #
+    # class Config:
+    #     from_attributes = True
 
 
 class UniversityResponse(BaseModel):
-    id: Optional[str]
+    id: Optional[UUID]
     name: Optional[str]
     photo: Optional[HttpUrl]
     location_id: Optional[str]
@@ -37,6 +51,50 @@ class UniversityResponse(BaseModel):
     email: Optional[EmailStr]
     webpage: Optional[HttpUrl]
     created_by_id: Optional[str]
+
+    class Config:
+        from_attributes = True
+
+
+
+
+
+class DepartmentCreate(BaseModel):
+    name: str
+    photo: Optional[str] = None
+    description: str
+    university_id: str
+
+
+class DepartmentResponse(BaseModel):
+    id: str
+    name: str
+    photo: Optional[str] = None
+    description: str
+    university_id: str
+
+    class Config:
+        from_attributes = True
+
+
+class DeteriorationBase(BaseModel):
+    name: str
+    department_id: str
+    photo: Optional[str]
+    description: str
+    number_of_students: int
+
+
+class DeteriorationCreate(DeteriorationBase):
+    pass
+
+
+class DeteriorationUpdate(DeteriorationBase):
+    pass
+
+
+class DeteriorationResponse(DeteriorationBase):
+    id: str
 
     class Config:
         from_attributes = True
