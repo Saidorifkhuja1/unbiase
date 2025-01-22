@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from category.models import Category
+from location.models import Location
 from .models import *
-from sqlalchemy.orm import selectinload
 from user.models import Users
 from sqlalchemy import update, delete
 from .schemas import *
@@ -20,14 +21,17 @@ router = APIRouter()
 jwt_auth = JWTAuth()
 
 
+
 @router.post("/university_create/", response_model=UniversityResponse, status_code=status.HTTP_201_CREATED)
 async def create_university(
     university: UniversityCreate,
     db: AsyncSession = Depends(get_db),
     token: str = Depends(JWTBearer(jwt_auth))
 ):
+    logger.info("Creating university with data: %s", university.dict())
     payload = jwt_auth.decode_token(token)
     current_user_id = payload.get("user_id")
+
     if not current_user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -39,45 +43,47 @@ async def create_university(
     if not user or not user.status:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only staff users can create a university"
+            detail="Only staff users can create universities"
         )
 
+    # Validate location
+    existing_location = await db.execute(select(Location).where(Location.id == university.location_id))
+    if not existing_location.scalar():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Location not found"
+        )
 
-    existing_university_by_name = await db.execute(
-        select(University).where(University.name == university.name)
-    )
-    existing_university_by_name = existing_university_by_name.scalar()
+    # Validate category
+    existing_category = await db.execute(select(Category).where(Category.id == university.category_id))
+    if not existing_category.scalar():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Category not found"
+        )
 
-    if existing_university_by_name:
+    # Check if university name already exists
+    existing_university = await db.execute(select(University).where(University.name == university.name))
+    if existing_university.scalar():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A university with this name already exists."
+            detail="A university with this name already exists"
         )
 
-
-    existing_university_by_phone = await db.execute(
-        select(University).where(University.phone_number == university.phone_number)
+    # Check if phone number or email is unique
+    existing_phone_email = await db.execute(
+        select(University).where(
+            (University.phone_number == university.phone_number) |
+            (University.email == university.email)
+        )
     )
-    existing_university_by_phone = existing_university_by_phone.scalar()
-
-    if existing_university_by_phone:
+    if existing_phone_email.scalar():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A university with this phone number already exists."
+            detail="A university with this phone number or email already exists"
         )
 
-
-    existing_university_by_email = await db.execute(
-        select(University).where(University.email == university.email)
-    )
-    existing_university_by_email = existing_university_by_email.scalar()
-
-    if existing_university_by_email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A university with this email already exists."
-        )
-
+    # Convert HttpUrl to strings
     new_university = University(
         name=university.name,
         photo=str(university.photo) if university.photo else None,
@@ -88,7 +94,7 @@ async def create_university(
         amount_of_students=university.amount_of_students,
         phone_number=university.phone_number,
         email=university.email,
-        webpage=str(university.webpage),
+        webpage=str(university.webpage) if university.webpage else None,
         created_by_id=current_user_id
     )
 
@@ -98,6 +104,7 @@ async def create_university(
         await db.refresh(new_university)
     except Exception as e:
         await db.rollback()
+        logger.error(f"Failed to create university: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create university: {str(e)}"
@@ -107,16 +114,19 @@ async def create_university(
         id=str(new_university.id),
         name=new_university.name,
         photo=new_university.photo,
-        location_id=new_university.location_id,
-        category_id=new_university.category_id,
+        location_id=str(new_university.location_id),
+        category_id=str(new_university.category_id),
         description=new_university.description,
         video=new_university.video,
         amount_of_students=new_university.amount_of_students,
         phone_number=new_university.phone_number,
         email=new_university.email,
         webpage=new_university.webpage,
-        created_by_id=new_university.created_by_id
+        created_by_id=str(new_university.created_by_id)
     )
+
+
+
 
 
 @router.put("/university_update/{university_id}/")
