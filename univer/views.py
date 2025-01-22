@@ -429,13 +429,14 @@ async def get_university_detail(
 
 @router.post("/department_create/", response_model=DepartmentResponse, status_code=status.HTTP_201_CREATED)
 async def create_department(
-        department: DepartmentCreate,
-        db: AsyncSession = Depends(get_db),
-        token: str = Depends(JWTBearer(jwt_auth))
+    department: DepartmentCreate,
+    db: AsyncSession = Depends(get_db),
+    token: str = Depends(JWTBearer(jwt_auth))
 ):
 
     payload = jwt_auth.decode_token(token)
     current_user_id = payload.get("user_id")
+    user_role = payload.get("role")  # Assuming the role is stored in the token payload
 
     if not current_user_id:
         raise HTTPException(
@@ -443,24 +444,19 @@ async def create_department(
             detail="User not authenticated"
         )
 
-
-    result = await db.execute(select(Users).where(Users.id == current_user_id))
-    user = result.scalar()
-    if not user or not user.status:
+    if user_role != "staff":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only staff users can create a department"
         )
 
-
     try:
-        uuid.UUID(department.university_id)
+        uuid.UUID(department.university_id)  # Validate university ID format
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid university ID format"
         )
-
 
     existing_university = await db.execute(select(University).where(University.id == department.university_id))
     existing_university = existing_university.scalar()
@@ -470,7 +466,6 @@ async def create_department(
             detail="University not found"
         )
 
-
     existing_department = await db.execute(select(Department).where(Department.name == department.name))
     existing_department = existing_department.scalar()
     if existing_department:
@@ -478,7 +473,6 @@ async def create_department(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="A department with this name already exists"
         )
-
 
     new_department = Department(
         name=department.name,
@@ -505,6 +499,14 @@ async def create_department(
         description=new_department.description,
         university_id=str(new_department.university_id)
     )
+
+
+
+
+
+
+
+
 
 
 @router.get("/department_detail/{department_id}/", response_model=DepartmentResponse, status_code=status.HTTP_200_OK)
@@ -543,9 +545,9 @@ async def update_department(
     db: AsyncSession = Depends(get_db),
     token: str = Depends(JWTBearer(jwt_auth))
 ):
-
     payload = jwt_auth.decode_token(token)
     current_user_id = payload.get("user_id")
+    user_role = payload.get("role")
 
     if not current_user_id:
         raise HTTPException(
@@ -553,15 +555,11 @@ async def update_department(
             detail="User not authenticated"
         )
 
-
-    result = await db.execute(select(Users).where(Users.id == current_user_id))
-    user = result.scalar()
-    if not user or not user.status:
+    if user_role != "staff":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only staff users can update a department"
         )
-
 
     department_to_update = await db.execute(select(Department).where(Department.id == department_id))
     department_to_update = department_to_update.scalar()
@@ -570,7 +568,6 @@ async def update_department(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Department not found"
         )
-
 
     existing_department = await db.execute(
         select(Department).where(Department.name == department.name, Department.id != department_id)
@@ -581,7 +578,6 @@ async def update_department(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="A department with this name already exists"
         )
-
 
     department_to_update.name = department.name
     department_to_update.photo = str(department.photo) if department.photo else None
@@ -609,16 +605,15 @@ async def update_department(
 
 
 
-
 @router.delete("/department_delete/{department_id}", status_code=status.HTTP_200_OK)
 async def delete_department(
     department_id: str,
     db: AsyncSession = Depends(get_db),
     token: str = Depends(JWTBearer(jwt_auth))
 ):
-
     payload = jwt_auth.decode_token(token)
     current_user_id = payload.get("user_id")
+    user_role = payload.get("role")
 
     if not current_user_id:
         raise HTTPException(
@@ -626,15 +621,11 @@ async def delete_department(
             detail="User not authenticated"
         )
 
-
-    result = await db.execute(select(Users).where(Users.id == current_user_id))
-    user = result.scalar()
-    if not user or not user.status:
+    if user_role != "staff":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only staff users can delete a department"
         )
-
 
     department_to_delete = await db.execute(select(Department).where(Department.id == department_id))
     department_to_delete = department_to_delete.scalar()
@@ -643,7 +634,6 @@ async def delete_department(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Department not found"
         )
-
 
     try:
         await db.delete(department_to_delete)
@@ -699,6 +689,8 @@ async def create_deterioration(
 
     payload = jwt_auth.decode_token(token)
     current_user_id = payload.get("user_id")
+    user_role = payload.get("role")
+
 
     if not current_user_id:
         raise HTTPException(
@@ -707,9 +699,15 @@ async def create_deterioration(
         )
 
 
+    if user_role != "staff":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only staff users are authorized to perform this action"
+        )
+
+
     department = await db.execute(select(Department).where(Department.id == deterioration.department_id))
     department = department.scalar()
-
     if not department:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -721,7 +719,6 @@ async def create_deterioration(
         select(Deterioration).where(Deterioration.name == deterioration.name)
     )
     existing_deterioration = existing_deterioration.scalar()
-
     if existing_deterioration:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -736,7 +733,6 @@ async def create_deterioration(
         description=deterioration.description,
         number_of_students=deterioration.number_of_students,
     )
-
     db.add(new_deterioration)
 
     try:
@@ -748,6 +744,7 @@ async def create_deterioration(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create deterioration: {str(e)}"
         )
+
 
     return DeteriorationResponse(
         id=str(new_deterioration.id),
@@ -801,6 +798,7 @@ async def update_deterioration(
 ):
     payload = jwt_auth.decode_token(token)
     current_user_id = payload.get("user_id")
+    user_role = payload.get("role")
 
     if not current_user_id:
         raise HTTPException(
@@ -808,6 +806,11 @@ async def update_deterioration(
             detail="User not authenticated"
         )
 
+    if user_role != "staff":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only staff users are authorized to perform this action"
+        )
 
     deterioration_to_update = await db.execute(select(Deterioration).where(Deterioration.id == deterioration_id))
     deterioration_to_update = deterioration_to_update.scalar()
@@ -818,7 +821,6 @@ async def update_deterioration(
             detail="Deterioration not found"
         )
 
-
     department = await db.execute(select(Department).where(Department.id == deterioration.department_id))
     department = department.scalar()
 
@@ -827,7 +829,6 @@ async def update_deterioration(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Department not found"
         )
-
 
     if deterioration_to_update.name != deterioration.name:
         existing_deterioration = await db.execute(
@@ -840,7 +841,6 @@ async def update_deterioration(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Deterioration with this name already exists"
             )
-
 
     deterioration_to_update.name = deterioration.name
     deterioration_to_update.department_id = deterioration.department_id
@@ -867,10 +867,6 @@ async def update_deterioration(
         number_of_students=deterioration_to_update.number_of_students,
     )
 
-
-
-
-
 @router.delete("/deterioration_delete/{deterioration_id}", status_code=status.HTTP_200_OK)
 async def delete_deterioration(
     deterioration_id: str,
@@ -879,6 +875,7 @@ async def delete_deterioration(
 ):
     payload = jwt_auth.decode_token(token)
     current_user_id = payload.get("user_id")
+    user_role = payload.get("role")
 
     if not current_user_id:
         raise HTTPException(
@@ -886,6 +883,11 @@ async def delete_deterioration(
             detail="User not authenticated"
         )
 
+    if user_role != "staff":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only staff users are authorized to perform this action"
+        )
 
     deterioration_to_delete = await db.execute(select(Deterioration).where(Deterioration.id == deterioration_id))
     deterioration_to_delete = deterioration_to_delete.scalar()
@@ -907,6 +909,7 @@ async def delete_deterioration(
         )
 
     return {"detail": "Deterioration deleted successfully"}
+
 
 
 @router.get("/deteriorations_list/{department_id}", response_model=List[DeteriorationResponse], status_code=status.HTTP_200_OK)
