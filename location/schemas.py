@@ -9,7 +9,7 @@ class RegionCreate(BaseModel):
     name: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class RegionUpdate(BaseModel):
@@ -25,7 +25,7 @@ class RegionResponse(BaseModel):
     created_by_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 

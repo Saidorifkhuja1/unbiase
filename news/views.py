@@ -1,15 +1,18 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+import asyncio
+from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import update, delete
 from uuid import UUID
 from database import get_db
+from typing import List
 from .models import News
 from .schemas import NewsCreate, NewsResponse, NewsUpdate
 from user.models import Users
 from user.jwt_auth import JWTBearer, JWTAuth
 
+connected_clients = {}
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
@@ -182,12 +185,13 @@ async def delete_news(
 
 
 
-@router.get("/all_news_list/", response_model=list[NewsResponse])
+@router.get("/all_news_list/", response_model=List[NewsResponse])
 async def list_all_news(db: AsyncSession = Depends(get_db)):
-
+    # Fetch all news from the database
     result = await db.execute(select(News))
     news_list = result.scalars().all()
 
+    # Return the list of news articles
     return [
         NewsResponse(
             id=article.id,
@@ -201,12 +205,43 @@ async def list_all_news(db: AsyncSession = Depends(get_db)):
 
 
 
-@router.get("/my_news_list/", response_model=list[NewsResponse])
-async def list_my_news(
-    db: AsyncSession = Depends(get_db),
-    token: str = Depends(JWTBearer(jwt_auth))
-):
+@router.websocket("/ws/all_news_list/")
+async def websocket_all_news_list(websocket: WebSocket, db: AsyncSession = Depends(get_db)):
+    await websocket.accept()
 
+    try:
+        while True:
+
+            result = await db.execute(select(News))
+            news_list = result.scalars().all()
+
+
+            news_response_list = [
+                NewsResponse(
+                    id=article.id,
+                    title=article.title,
+                    photo=article.photo,
+                    body=article.body,
+                    created_by_id=article.created_by_id
+                )
+                for article in news_list
+            ]
+
+            await websocket.send_json(news_response_list)
+            await websocket.receive_text()
+
+    except WebSocketDisconnect:
+
+        logger.info("Client disconnected from WebSocket.")
+
+
+
+
+@router.get("/my_news_list/", response_model=List[NewsResponse])
+async def list_my_news(
+        db: AsyncSession = Depends(get_db),
+        token: str = Depends(JWTBearer(jwt_auth))
+):
     payload = jwt_auth.decode_token(token)
     current_user_id = payload.get("user_id")
     if not current_user_id:
@@ -214,6 +249,7 @@ async def list_my_news(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not authenticated"
         )
+
 
     result = await db.execute(select(News).where(News.created_by_id == current_user_id))
     my_news = result.scalars().all()
@@ -228,3 +264,7 @@ async def list_my_news(
         )
         for article in my_news
     ]
+
+
+
+
