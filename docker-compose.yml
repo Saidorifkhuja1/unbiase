@@ -14,7 +14,9 @@ services:
       - "5432:5432"
 
   fastapi:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: always
     depends_on:
       - db
